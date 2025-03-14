@@ -28,7 +28,9 @@ plot(pressure)
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 ```{r}
-adding <- 2 + 2 + 2
+adding <- 2 + 2 + 2 
 adding
+subtraction <- 24 - 4 - 4
+subtraction
 ```
 
