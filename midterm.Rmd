@@ -1,0 +1,183 @@
+---
+title: "2012-2021 Seasons Summary Report"
+font: 12pt
+date: "4/4/2025"
+output:
+  html_document:
+    df_print: paged
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+# Loading packages and libraries 
+options(repos = c(CRAN = "https://cran.rstudio.com/"))
+library(devtools)
+        devtools::install_github("abresler/nbastatR@aba9179ef644f263387c1536d6ddd26104d79cf4")
+library(tidyverse)
+library(nbastatR)
+library(ggplot2)
+library(grid)
+install.packages("jpeg")
+install.packages("sportyR")
+library(sportyR)
+
+```
+
+```{r, include=FALSE}
+#Using the geom_basketball() function from the sportyR package, this is my design for the court in an attempt to make it look like the home court of the Milwaukee Bucks. The color customization options are limited and this is as close as I could get. 
+
+court <- geom_basketball(
+    league = "NBA", 
+    display_range = "defense", 
+    rotation = 90,
+    color_updates = list(
+      court_apron = "darkgreen",
+      three_point_line = "white")) 
+```
+
+```{r echo=FALSE, fig.height=12, fig.width=12, message=FALSE, warning=FALSE, dpi=200, results = 'hide'}
+# Increases the size of the connection buffer to input all the data required
+Sys.setenv("VROOM_CONNECTION_SIZE" = 500000)
+
+# Define the range of years, 10 years before the 2021 Championship win
+seasons <- 2012:2021
+
+# Fetch shot data for each season and combine them. I had figured out how to accurately pull and graph data for a singular season but ChatGPT helped me with the below code to fetch the shot data from all desired seasons.
+bucks_shots_all <- map_dfr(seasons, function(season) {
+  teams_shots(teams = "Milwaukee Bucks", seasons = season) %>%
+    mutate(season = season) # Add a season column for faceting
+})
+
+# Due to differences in how the packages treat the coordinates of the hoop, as well as how  the function geom_basketball() views different parts of the court, the location of the  shots needed to be manually modified to match the court image
+
+bucks_shots_all <- bucks_shots_all %>%
+  mutate(
+    transformed_x = locationX * (25/250),  # Convert X to court scale
+    transformed_y = locationY * (47/600) - 40  # Convert Y to court scale
+  )
+
+# Plotting graphs of Bucks shot locations of each season from 2012 to 2021
+
+court + 
+  geom_point(data = bucks_shots_all, aes(
+    x = transformed_x,
+    y = transformed_y, 
+    color = isShotMade
+    ), 
+    alpha = 0.4, size = 1
+    ) +
+  scale_color_manual(
+    values = c("FALSE" = "#FF1493", "TRUE" = "#39FF14"),
+    labels = c("Missed", "Made")
+  ) +
+  labs(color = "", 
+       title = "Milwaukee Bucks Shot Chart (2012-2021)") +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    plot.title = element_text(hjust = 0.5),
+    aspect.ratio = 1.5, # Makes the facets taller
+    strip.text = element_text(size = 16, face = "bold"),
+    legend.text = element_text(size = 14, face = "bold")
+  ) +
+  facet_wrap(~season, nrow=2) +
+  theme(
+  plot.title = element_text(size = 20, face = "bold", hjust = 0.5, color = "darkgreen")
+)
+
+```
+
+    * Shift away from mid-range shots, with a focus on three-pointers and close-range finishes
+    * Top 4 winning-records out of the sample years were the 2018-2021 seasons, with the NBA Championship won in 2021
+    * 2013 and 2014 seasons in bottom three of winning-records out of the sample years
+    * The Bucks led the NBA in points per game in 2019 and 2020
+    * Reduction of shots taken past the three-point line
+    
+    
+  \newpage  
+    
+    
+    
+    
+    
+    
+    
+- In the earlier seasons, you see a higher density of shots contained within the entire three-point line. As we progress, three-pointers and points in the paint become more defined and separate. A shift away from mid-range shots our players are leaning on their strengths, with our shooters taking high-percentage three-pointers and our big men, like Giannis, driving to the hoop. In addition, the success of a mid-range shot is similar in probability to a three-pointer but if made, results in one less point. 
+- The graphs of 2018, 2019, 2020, and 2021 can be seen to display the largest amounts of green, indicating points scored. In general, high-scoring games lead to wins so it is expected that these 4 seasons would be the top 4 winning-records of this sample. 
+- The graphs of 2013 and 2014 display some of the largest and most clustered areas of red, indicating missed shots. It is very difficult to win games on defense alone so it makes sense that the two graphs with large swaths of red were in the bottom three winning-records of this sample. 
+- 2019 and 2020, as shown in these graphs, display a large quantity and density of points scored. This correlates with the fact that in those two seasons, the Milwaukee Bucks led the NBA in points per game (PPG). 
+- From 2012 to 2021, there is a slight decrease in shots taken past the three-point line. This is good for multiple reasons. First, these are low-percentage shots that gain you no more points than a shot from the three-point line. Unless there is low time on the clock and we are down by three points, players should work to get the ball closer to the hoop in a more enviable position to score. This relates to the second reason that a decrease in these types of shots is beneficial. Since most long-distance and half-court shots are taken as a last-ditch effort to win the game or tie for overtime, the decrease can be assumed to indicate that the Bucks have been in less of these positions as time has increased. This correlates with the fact that the top 4 winning-records are in the last 4 years of this sample. When you are winning games, you are not typically taking these long-distance shots. Decrease in low-percentage half-court shots can be seen to relate to amount of games won. 
+    
+   
+
+   
+
+   
+
+
+  
+
+```{r echo=FALSE, fig.height=12, fig.width=12, message=FALSE, warning=FALSE, dpi=200, results = 'hide'}
+# Increases the size of the connection buffer to input all the data required
+Sys.setenv("VROOM_CONNECTION_SIZE" = 500000)
+
+# Pulls desired seasons, from since the Bucks won the championship in 2021 to present
+seasons <- 2021:2025
+
+# Fetches shot data from each season
+bucks_shots_giannis <- map_dfr(seasons, function(season) {
+  teams_shots(teams = "Milwaukee Bucks", seasons = season) %>%
+    mutate(season = season) # Add a season column for faceting
+})
+  
+# Filter for Giannis Antetokounmpo, our desired player
+bucks_shots_giannis <- bucks_shots_giannis %>%
+  filter(namePlayer == "Giannis Antetokounmpo")
+
+# Manually modify the shot locations, as in the first code chunk, due to differences in how packages treat the coordinates of the hoop
+bucks_shots_giannis <- bucks_shots_giannis %>%
+  mutate(
+    transformedx = locationX * (25/250),  # Convert X to court scale
+    transformedy = locationY * (47/600) - 40  # Convert Y to court scale
+  )
+
+# Create the shot chart
+court + 
+  geom_point(data = bucks_shots_giannis, aes(
+    x = transformedx,
+    y = transformedy, 
+    color = isShotMade
+    ), 
+    alpha = 0.4, size = 1
+    ) +
+  scale_color_manual(
+    values = c("FALSE" = "#FF1493", "TRUE" = "#39FF14"),
+    labels = c("Missed", "Made")
+  ) +
+  labs(color = "", 
+       title = "Giannis Antetokounmpo Shot Chart (2021-2025)") +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    plot.title = element_text(hjust = 0.5),
+    aspect.ratio = 1.5, # Keeps facets taller
+    strip.text = element_text(size = 16, face = "bold"),
+    legend.text = element_text(size = 14, face = "bold")
+  ) +
+  facet_wrap(~season, nrow=1) +
+  theme(
+    plot.title = element_text(size = 20, face = "bold", hjust = 0.5, color = "darkgreen")
+  )
+
+```
+
+Interest was expressed in looking at our franchise player, Giannis Antetokounmpo, and his shot-charts from the 2021 season to present. It is my understanding that we wanted to see how Giannis has been performing since our last championship win in the 2021 season. As you can see in the graphics, Giannis has been performing at a high-level of play for the last 5 seasons. The NBA reports that Giannis is currently 2nd in points-per-game, at a whopping 30.4 PPG. This aligns with the graphics, with 2025 showing large and concentrated amounts of green. As you can also see, Giannis has decreased his three-point attempts and focused more on in-the-paint scoring. This is due to the acquiring of highly skilled three-point shooters, such as Damian Lillard and Gary Trent Jr. With successful shooters to support him, Giannis is able to use his size and speed to score in the paint. The statistics support that Giannis is one of the best players on the Milwaukee Bucks and he should be compensated and supported as such. 
+ 
+  
+
+  
+  
+  
+  
+
+
